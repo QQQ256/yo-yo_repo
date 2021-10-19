@@ -210,40 +210,40 @@ public class Mechanics : MonoBehaviour
 
         #region dynamic_2
 
-        if (Input.GetMouseButtonDown(0) && !isUseSkills)
-        {
-            isDynamic_2 = true;
-            isUseSkills = true;
-            isInstantiated = true;
-            Vector2 point = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
-            point = Camera.main.ScreenToWorldPoint(point);
-            tempYoyo = Instantiate(yoyo, playerPoint, Quaternion.identity);
-            tempYoyo.name = "YOYO";
-            isInstantiated = true;
-            if (isMechanic_2)
-            {
-                destinationPoint = walkDogPoint;
-                return;
-            }
-            destinationPoint = new Vector2(point.x, point.y);
-        }
-        if (isInstantiated)
-        {
-            if (!tempYoyo)
-            {
-                return;
-            }
-            var position = tempYoyo.transform.position;
-            position = Vector2.MoveTowards(position, destinationPoint, dynamic2YoyoSpeed * Time.deltaTime);
-            var yoyoHitWater = Physics2D.OverlapCircle(position, 0.2f, LayerMask.NameToLayer("Water"));
-            if (yoyoHitWater)
-            {
-                Debug.Log("66666");
-            }
-            YoyoReturnToPlayer();
-            position = Vector2.MoveTowards(position, destinationPoint, dynamic2YoyoSpeed * Time.deltaTime);
-            tempYoyo.transform.position = position;
-        }
+        // if (Input.GetMouseButtonDown(0) && !isUseSkills)
+        // {
+        //     isDynamic_2 = true;
+        //     isUseSkills = true;
+        //     isInstantiated = true;
+        //     Vector2 point = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
+        //     point = Camera.main.ScreenToWorldPoint(point);
+        //     tempYoyo = Instantiate(yoyo, playerPoint, Quaternion.identity);
+        //     tempYoyo.name = "YOYO";
+        //     isInstantiated = true;
+        //     if (isMechanic_2)
+        //     {
+        //         destinationPoint = walkDogPoint;
+        //         return;
+        //     }
+        //     destinationPoint = new Vector2(point.x, point.y);
+        // }
+        // if (isInstantiated)
+        // {
+        //     if (!tempYoyo)
+        //     {
+        //         return;
+        //     }
+        //     var position = tempYoyo.transform.position;
+        //     position = Vector2.MoveTowards(position, destinationPoint, dynamic2YoyoSpeed * Time.deltaTime);
+        //     var yoyoHitWater = Physics2D.OverlapCircle(position, 0.2f, LayerMask.NameToLayer("Water"));
+        //     if (yoyoHitWater)
+        //     {
+        //         Debug.Log("66666");
+        //     }
+        //     YoyoReturnToPlayer();
+        //     position = Vector2.MoveTowards(position, destinationPoint, dynamic2YoyoSpeed * Time.deltaTime);
+        //     tempYoyo.transform.position = position;
+        // }
         // InstantiateYoyo();
 
         #endregion

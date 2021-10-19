@@ -1,6 +1,11 @@
+using System.Net.NetworkInformation;
+using System.Numerics;
 using TMPro.EditorUtilities;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Vector2 = UnityEngine.Vector2;
+using Vector3 = UnityEngine.Vector3;
+
 public class PlayerController : MonoBehaviour
 {
     [Header("Player in the room")] 
@@ -9,35 +14,63 @@ public class PlayerController : MonoBehaviour
     public bool hasYoyo;
     public static PlayerController Instance;
     public float speed, jumpForce;
+    
     [Header("Player State")] 
     public float health;
     public bool isDead;
+    
     [Header("States Check")] 
     public bool isGround;
     public bool isJump;
+    public bool canJump;
     public bool canJump2;
     public bool jumpTwice;
     public bool isIdle;
     public bool isPlatform;
     [Header("Ground Check")] 
+    
     public Transform groundCheck,platformCheck;
-    public LayerMask groundLayer, platformLayer;
+    public LayerMask groundLayer, platformLayer,slopeLayer;
     public float downTime;
     public float checkRadius;
     [Header("FX Check")] 
+    
     public GameObject jumpFX;
     public GameObject fallFX;
     public GameObject leftRunFX;
     [Header("Wall Run")] 
     public float playerHeight;
 
-    private BoxCollider2D _collider2D;
+    [Header("Slope Function")] 
+    public float slopeCheckDistance;
+    public float slopeCheckDistanceHorizontal;
+    public GameObject wallCheckPoint;
+
+    [SerializeField] 
+    private Vector2 colliderSize;
+
+    private Vector2 newVelocity;//new move & jump method
+    private Vector2 newForce;
+    private float slopeDownAngle;
+    private float slopeDownAngleOld;
+    private float slopeSideAngle;
+    private Vector2 slopeNormalPerpendicular;
+    
+    [SerializeField]
+    private bool isOnSlope;
+
+    private bool isJumping;
+
+    public PhysicsMaterial2D noFriction;
+    public PhysicsMaterial2D fullFriction;
+
+    private CapsuleCollider2D bc2D;
     #region private members
     
     public Rigidbody2D rb;
     private Animator _animator;
-    private float horizontalInput;
-    private float verticalInput;
+    public float horizontalInput;
+    public float verticalInput;
     
     private int animationCount;
     #endregion
@@ -47,27 +80,19 @@ public class PlayerController : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        if (SceneManager.GetActiveScene().name == "StartScene")
-        {
-            isIdle = true;
-        }
     }
 
     void Start()
     {
         Bag.SetActive(false);
-        _collider2D = GetComponent<BoxCollider2D>();
-        // GameManager.Instance.IsPlayer(this);
-        if(isIdle) return;
-        //获取面板中的image
+        bc2D = GetComponent<CapsuleCollider2D>();
         rb = GetComponent<Rigidbody2D>();
         _animator = GetComponent<Animator>();
+        colliderSize = bc2D.size;
     }
 
     void Update()
     {
-        if (isIdle)
-            return;
         if (isDead)
         {
             // _animator.SetBool("dead",isDead);
@@ -77,13 +102,28 @@ public class PlayerController : MonoBehaviour
         InputCheck();
     }
 
+    private void FixedUpdate()
+    {
+        horizontalInput = Input.GetAxisRaw("Horizontal");
+        verticalInput = Input.GetAxisRaw("Vertical");
+        if (isDead)
+        {
+            rb.velocity = Vector2.zero;
+            return;
+        }
+        PhysicsCheck();
+        Movement();
+        SlopeCheck();
+    }
+
     private void InputCheck()
     {
         if (Input.GetButtonDown("Jump"))
         {
-            if (isGround)
+            if (isGround || isOnSlope)
             {
                 Jump();
+                canJump = true;
                 canJump2 = true;
             }
             // else if (canJump2)
@@ -103,30 +143,29 @@ public class PlayerController : MonoBehaviour
       
     }
 
-    private void FixedUpdate()
-    {
-        if(isIdle)
-            return;
-        if (isDead)
-        {
-            rb.velocity = Vector2.zero;
-            return;
-        }
-        PhysicsCheck();
-        Movement();
-        
-    }
-
     private void Movement()
     {
-        horizontalInput = Input.GetAxisRaw("Horizontal");
-        verticalInput = Input.GetAxisRaw("Vertical");
-        rb.velocity = new Vector2(horizontalInput * speed, rb.velocity.y);
+        // if (isGround)
+        // {
+        //     rb.velocity = new Vector2(horizontalInput * speed, rb.velocity.y);
+        // }
+        //
+        // if (isGround && isOnSlope)
+        // {
+        //     // newVelocity.Set(horizontalInput * speed, rb.velocity.y);
+        //     newVelocity.Set(-horizontalInput * speed * slopeNormalPerpendicular.x, horizontalInput * speed * slopeNormalPerpendicular.y);
+        //     rb.velocity = newVelocity;
+        // }
+        
+        // newVelocity.Set(horizontalInput * speed, rb.velocity.y);
+        // rb.velocity = newVelocity;
+
+
         if (horizontalInput == 0)
         {
             leftRunFX.SetActive(false);
         }
-        
+
         if (horizontalInput != 0 && isGround)
         {
             leftRunFX.SetActive(true);
@@ -137,6 +176,29 @@ public class PlayerController : MonoBehaviour
             transform.localScale = new Vector3(horizontalInput, 1, 1);
             leftRunFX.SetActive(false);
         }
+
+        rb.velocity = new Vector2(horizontalInput * speed, rb.velocity.y);
+        
+        //slope judgement
+         // if (isGround)
+         // {
+         //     newVelocity.Set(horizontalInput * speed, rb.velocity.y);
+         //     rb.velocity = newVelocity;
+         //     Debug.Log("111");
+         // }
+         if (isOnSlope && !canJump)
+         {
+             newVelocity.Set(-horizontalInput * speed * slopeNormalPerpendicular.x, -horizontalInput * speed * slopeNormalPerpendicular.y);
+             rb.velocity = newVelocity;
+             Debug.Log("22");
+             //infinity jump method
+         }
+         // else if (!isGround)
+         // {
+         //     newVelocity.Set(horizontalInput * speed, rb.velocity.y);
+         //     rb.velocity = newVelocity;
+         //     Debug.Log("33");
+         // }
     }
 
     void Jump()
@@ -144,22 +206,18 @@ public class PlayerController : MonoBehaviour
         isJump = true;
         jumpFX.SetActive(true);
         jumpFX.transform.position = transform.position + new Vector3(0, -0.45f, 0);
-        rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+        newVelocity.Set(0, 0);
+        rb.velocity = newVelocity;
+        newForce.Set(0,jumpForce);
+        rb.AddForce(newForce,ForceMode2D.Impulse);
+        // rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         rb.gravityScale = 4;
         if (isJump && gameObject.layer != LayerMask.NameToLayer("Player"))
         {
             gameObject.layer = LayerMask.NameToLayer("Player");
         }
     }
-
-    void JumpTwice()
-    {
-        jumpTwice = true;
-        jumpFX.SetActive(true);
-        jumpFX.transform.position = transform.position + new Vector3(0, -0.45f, 0);
-        rb.velocity = new Vector2(rb.velocity.x, 12);
-        rb.gravityScale = 4;
-    }
+    
 
     void WallRunCheck()
     {
@@ -199,7 +257,7 @@ public class PlayerController : MonoBehaviour
         var position = groundCheck.position;
         var position1 = platformCheck.transform.position;
         isGround = Physics2D.OverlapCircle(position, checkRadius, groundLayer)
-                   || Physics2D.OverlapCircle(position1, checkRadius, platformLayer);
+                   || Physics2D.OverlapCircle(position1, checkRadius, slopeLayer);
         isPlatform = Physics2D.OverlapCircle(position1, 0.02f, platformLayer);
         if (isGround)
         {
@@ -212,9 +270,14 @@ public class PlayerController : MonoBehaviour
             rb.gravityScale = 4;
         }
 
-        var direction = transform.localScale.x;
-        Vector2 grabDir = new Vector2(direction, 0f);
-        RaycastHit2D hit = Physics2D.Raycast(new Vector2(direction, playerHeight), grabDir, 0.4f,groundLayer);
+        if (rb.velocity.y <= 0.0f)
+        {
+            canJump = false;
+        }
+        // else if (isOnSlope && !isGround)
+        // {
+        //     rb.gravityScale = 100;
+        // }
         // if (hit.collider.CompareTag("Wall"))
         // {
         //     Debug.DrawRay(transform.position,grabDir);
@@ -270,9 +333,68 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    #region Animation events
-    //animation event
+    #region Slope Logic
+
+    private void SlopeCheck()
+    {
+        Vector2 checkPos = transform.position - new Vector3(0, colliderSize.y / 2);
+        SlopeCheckVertical(checkPos);
+        SlopeCheckHorizontal(checkPos);
+    }
+
+    private void SlopeCheckHorizontal(Vector2 checkPos)
+    {
+        RaycastHit2D slopeHitFront = Physics2D.Raycast(checkPos, transform.right, slopeCheckDistance, slopeLayer);
+        RaycastHit2D slopeHitBack = Physics2D.Raycast(checkPos, -transform.right, slopeCheckDistance, slopeLayer);
+        if (slopeHitFront)
+        {
+            isOnSlope = true;
+            slopeSideAngle = Vector2.Angle(slopeHitFront.normal, Vector2.up);
+        }
+        else if (slopeHitBack)
+        {
+            isOnSlope = true;
+            slopeSideAngle = Vector2.Angle(slopeHitBack.normal, Vector2.up);
+        }
+        else
+        {
+            slopeSideAngle = 0f;
+            isOnSlope = false;
+        }
+    }
+    
+    private void SlopeCheckVertical(Vector2 checkPos)
+    {
+        RaycastHit2D hit = Physics2D.Raycast(checkPos, Vector2.down, slopeCheckDistance, slopeLayer);
+        if (hit)
+        {
+            slopeNormalPerpendicular = Vector2.Perpendicular(hit.normal).normalized;
+
+            slopeDownAngle = Vector2.Angle(hit.normal, Vector2.up);//angle between x-axis and the slope y-axis
+
+            if (slopeDownAngle != slopeDownAngleOld)
+            {
+                isOnSlope = true;
+            }
+
+            slopeDownAngleOld = slopeDownAngle;
+            
+            Debug.DrawRay(hit.point,slopeNormalPerpendicular,Color.red);
+            Debug.DrawRay(hit.point,hit.normal,Color.blue);
+        }
+        
+        if (isOnSlope && horizontalInput == 0f)
+        {
+            rb.sharedMaterial = fullFriction;
+        }
+        else
+        {
+            rb.sharedMaterial = noFriction;
+        }
+    }
+
    
+    
     #endregion
     
     // private void OnTriggerEnter2D(Collider2D other)
