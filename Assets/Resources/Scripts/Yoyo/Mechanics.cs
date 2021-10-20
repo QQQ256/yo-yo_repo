@@ -1,11 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
-using DG.Tweening;
-using Debug = UnityEngine.Debug;
-using Random = System.Random;
 
 public class Mechanics : MonoBehaviour
 {
@@ -147,7 +143,7 @@ public class Mechanics : MonoBehaviour
                     transform.position = Vector2.MoveTowards(transform.position, walkDogPoint,
                         mechanic2YoyoSpeed * Time.deltaTime);
                     _animator.SetFloat("speed", 1f); //TODO
-                    if (Vector2.Distance(transform.position, walkDogPoint) <= 0.5f)
+                    if (Vector2.Distance(transform.position, walkDogPoint) <= 1f)
                     {
                         transform.position = walkDogPoint;
                     }
@@ -183,7 +179,7 @@ public class Mechanics : MonoBehaviour
                 {
                     destinationPoint = playerPoint;
                     tempYoyo.transform.position = Vector2.MoveTowards(tempYoyo.transform.position, destinationPoint,
-                        7 * Time.deltaTime);
+                        30 * Time.deltaTime);
                 }
 
                 // tempYoyo.transform.position = Vector2.MoveTowards(tempYoyo.transform.position, destinationPoint, 7 * Time.deltaTime);

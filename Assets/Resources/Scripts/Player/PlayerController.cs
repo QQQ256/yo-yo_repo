@@ -1,6 +1,3 @@
-using System.Net.NetworkInformation;
-using System.Numerics;
-using TMPro.EditorUtilities;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Vector2 = UnityEngine.Vector2;
@@ -112,6 +109,10 @@ public class PlayerController : MonoBehaviour
             return;
         }
         PhysicsCheck();
+        if (Mechanics.Instance.isMechanic_2)
+        {
+            return;
+        }
         Movement();
         SlopeCheck();
     }

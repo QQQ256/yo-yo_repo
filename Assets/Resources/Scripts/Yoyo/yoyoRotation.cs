@@ -31,7 +31,8 @@ public class yoyoRotation : MonoBehaviour
     {
         //when the yoyo hits the wall, it should return back, not through the wall!!!
         //when hits the wall, set destinationPoint to the player
-        isWall = Physics2D.OverlapCircle(transform.position, CheckRadius, groundLayer);
+        isWall = Physics2D.OverlapCircle(transform.position, CheckRadius, groundLayer) ||
+                 Physics2D.OverlapCircle(transform.position, CheckRadius, LayerMask.NameToLayer("Slope"));
     }
 
     private void OnCollisionEnter2D(Collision2D other)

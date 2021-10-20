@@ -11,7 +11,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }//可读，但只能在内部改写
     public bool gameOver;
     //public int levelID;//用于退出面板的判断 获得当前玩到哪一关的状态+通关则设置json中的key value 为 true
-    public List<Enemy> enemy = new List<Enemy>();
+    //public List<Enemy> enemy = new List<Enemy>();
     public List<GameObject> coins = new List<GameObject>();
     //public bool enemyAllDead;
     //public int TryOutID;
@@ -62,10 +62,10 @@ public class GameManager : MonoBehaviour
     /**
      * 这里使用的都是观察者模式
      */
-    public void IsEnemy(Enemy enemy)
-    {
-        this.enemy.Add(enemy);
-    }
+    // public void IsEnemy(Enemy enemy)
+    // {
+    //     this.enemy.Add(enemy);
+    // }
     
     public void IsPlayer(PlayerController controller)
     {
